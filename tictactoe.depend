@@ -1,0 +1,11 @@
+# depslib dependency file v1.0
+1607183754 source:d:\_root\study\7sem\winapi\program\tictactoe\main.cpp
+	<tchar.h>
+	<windows.h>
+	"menu.h"
+
+1607183676 d:\_root\study\7sem\winapi\program\tictactoe\menu.h
+
+1607183748 source:d:\_root\study\7sem\winapi\program\tictactoe\menu.rc
+	"menu.h"
+
