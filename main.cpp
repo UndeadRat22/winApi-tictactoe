@@ -376,6 +376,15 @@ INT_PTR CALLBACK Save(HWND hdlg, UINT message, WPARAM wParam, LPARAM lParam){
 }
 
 void RestoreGame(char data[10]){
+    int turnCount = 0;
+    for (int i = 0; i < 9; i++){
+        boardValues[i] = data[i] - '0';
+        std::cout << data[i] - '0' << std::endl;
+        if ((data[i] - '0') != EMPTY){
+            turnCount++;
+        }
+    }
+    turn = turnCount % 2 == 0 ? CROSS : NOUGHT;
 }
 
 INT_PTR CALLBACK Restore(HWND hdlg, UINT message, WPARAM wParam, LPARAM lParam){
@@ -424,6 +433,17 @@ void RestoreState(const HWND& hwnd){
 }
 
 
+void UpdateCells(const HWND& hwnd){
+    HDC hdc = GetDC(hwnd);
+    for (int i = 0; i < 9; i++){
+        if (boardValues[i] == EMPTY)continue;
+        RECT cell = GetCellRect(hwnd, i);
+        HICON icon = boardValues[i] == CROSS ? p1icon : p2icon;
+        DrawIconCentered(hdc, cell, icon);
+    }
+    DrawPlayerTurn(hwnd, hdc);
+}
+
 LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
@@ -444,6 +464,8 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                     break;
                 case ID_FILE_RESTORE:
                     RestoreState(hwnd);
+                    Force_WM_PAINT(hwnd);
+                    UpdateCells(hwnd);
                     break;
                 default:
                 break;
