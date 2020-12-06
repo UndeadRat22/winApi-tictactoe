@@ -75,10 +75,10 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
            WS_OVERLAPPEDWINDOW, /* default window */
            CW_USEDEFAULT,       /* Windows decides the position */
            CW_USEDEFAULT,       /* where the window ends up on the screen */
-           544,                 /* The programs width */
+           600,                 /* The programs width */
            375,                 /* and height in pixels */
            HWND_DESKTOP,        /* The window is a child-window to desktop */
-           NULL,                /* No menu */
+           LoadMenu(NULL, MAKEINTRESOURCE(IDC_TICTACTOE)),
            hThisInstance,       /* Program Instance handler */
            NULL                 /* No Window Creation data */
            );
