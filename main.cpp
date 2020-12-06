@@ -175,7 +175,7 @@ void DrawPlayerTurn(const HWND &hwnd, const HDC& hdc){
     SetBkMode(hdc, TRANSPARENT);
     RECT client;
     GetClientRect(hwnd, &client);
-    client.bottom = 18;
+    client.bottom = 17;
     client.left = 40;
     client.right = client.right - 40;
     FillRect(hdc, &client, (HBRUSH)COLOR_BACKGROUND);
@@ -320,10 +320,113 @@ void NewGame(const HWND& hwnd){
     Draw(hwnd);
 }
 
+void SaveGameDataToFile(TCHAR lpszFileName[]){
+	char output[9];
+	for (int i = 0; i < 9; i++)
+	{
+	    //convert int to 'char' by performing ascii magic
+		output[i] = boardValues[i] + '0';
+	}
+
+	FILE *fp;
+	fp = _tfopen(lpszFileName, TEXT("wb"));
+	fwrite(output, sizeof(char), sizeof(output), fp);
+	fclose(fp);
+}
+
+bool GetGameDataFromFile(TCHAR lpszFileName[], char *gameData){
+    FILE *fp;
+	fp = _tfopen(lpszFileName, TEXT("rb"));
+	if (fp == NULL){
+        return false;
+	}
+	fgets(gameData, 10, fp);
+	fclose(fp);
+	return true;
+}
+
+INT_PTR CALLBACK Save(HWND hdlg, UINT message, WPARAM wParam, LPARAM lParam){
+    TCHAR lpszFileName[32];
+	WORD cchFileName;
+
+	UNREFERENCED_PARAMETER(lParam);
+	switch (message){
+	case WM_INITDIALOG:
+		return (INT_PTR)TRUE;
+	case WM_COMMAND:
+		if (LOWORD(wParam) == IDCANCEL)
+		{
+			EndDialog(hdlg, LOWORD(wParam));
+			return (INT_PTR)TRUE;
+		}
+		switch (wParam)
+		{
+		case IDOK:
+			cchFileName = (WORD)SendDlgItemMessage(hdlg,IDC_FILE_NAME,EM_LINELENGTH,(WPARAM)0,(LPARAM)0);
+			*((LPWORD)lpszFileName) = cchFileName;
+			SendDlgItemMessage(hdlg,IDC_FILE_NAME,EM_GETLINE,(WPARAM)0,(LPARAM)lpszFileName);
+			lpszFileName[cchFileName] = 0;
+			SaveGameDataToFile(lpszFileName);
+			MessageBox(hdlg,"Success","Success",MB_OK);
+			EndDialog(hdlg, LOWORD(wParam));
+			return (INT_PTR)TRUE;
+		}
+	}
+	return (INT_PTR)FALSE;
+}
+
+void RestoreGame(char data[10]){
+}
+
+INT_PTR CALLBACK Restore(HWND hdlg, UINT message, WPARAM wParam, LPARAM lParam){
+    TCHAR lpszFileName[32];
+	WORD cchFileName;
+
+	UNREFERENCED_PARAMETER(lParam);
+	switch (message){
+	case WM_INITDIALOG:
+		return (INT_PTR)TRUE;
+	case WM_COMMAND:
+		if (LOWORD(wParam) == IDCANCEL)
+		{
+			EndDialog(hdlg, LOWORD(wParam));
+			return (INT_PTR)TRUE;
+		}
+		switch (wParam)
+		{
+		case IDOK:
+			cchFileName = (WORD)SendDlgItemMessage(hdlg,IDC_FILE_NAME,EM_LINELENGTH,(WPARAM)0,(LPARAM)0);
+			*((LPWORD)lpszFileName) = cchFileName;
+			SendDlgItemMessage(hdlg,IDC_FILE_NAME,EM_GETLINE,(WPARAM)0,(LPARAM)lpszFileName);
+			lpszFileName[cchFileName] = 0;
+			char data[10];
+            bool success = GetGameDataFromFile(lpszFileName, data);
+            if (success){
+                MessageBox(hdlg,"Success","Success",MB_OK);
+                RestoreGame(data);
+            }
+            else{
+				MessageBox(hdlg,"Bad save file","Error",MB_OK);
+            }
+			EndDialog(hdlg, LOWORD(wParam));
+			return (INT_PTR)TRUE;
+		}
+	}
+	return (INT_PTR)FALSE;
+}
+
+void SaveState(const HWND& hwnd){
+    DialogBox(hInst, MAKEINTRESOURCE(IDD_FILE_NAME), hwnd, Save);
+}
+
+void RestoreState(const HWND& hwnd){
+    DialogBox(hInst, MAKEINTRESOURCE(IDD_FILE_NAME), hwnd, Restore);
+}
+
 
 LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    switch (message)                  /* handle the messages */
+    switch (message)
     {
         case WM_CREATE:
             LoadResources(hwnd);
@@ -333,6 +436,15 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                 case ID_FILE_NEWGAME:
                     NewGame(hwnd);
                 break;
+                case ID_FILE_EXIT:
+                    PostQuitMessage(0);
+                    break;
+                case ID_FILE_SAVE:
+                    SaveState(hwnd);
+                    break;
+                case ID_FILE_RESTORE:
+                    RestoreState(hwnd);
+                    break;
                 default:
                 break;
             }
