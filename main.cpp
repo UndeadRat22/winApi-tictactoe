@@ -9,6 +9,7 @@
 #define NOUGHT 2
 #define EMPTY 0
 #define GAME_OVER 5
+#define TIE 10
 #define OUTSIDE -2
 
 #include <iostream>
@@ -233,9 +234,59 @@ void DrawIconCentered(const HDC& hdc, const RECT& rect, const HICON& hIcon)
     DrawIcon(hdc, left, top, hIcon);
 }
 
+int GetVictor(int winningCells[3])
+{
+	int wins[] = {
+	    /*hor */0,1,2,  3,4,5,  6,7,8,
+	    /*ver */0,3,6,  1,4,7,  2,5,8,
+	    /*diag */0,4,8,  2,4,6 };
+
+    //someone won
+	for (auto i = 0; i < 24; i+=3)
+	{
+		if (boardValues[wins[i]] != EMPTY &&
+            boardValues[wins[i]] == boardValues[wins[i+1]] &&
+            boardValues[wins[i]] == boardValues[wins[i+2]])
+		{
+			winningCells[0] = wins[i];
+			winningCells[1] = wins[i + 1];
+			winningCells[2] = wins[i + 2];
+
+			return boardValues[wins[i]];
+		}
+	}
+	//return no victor if board is not full
+	for (auto i = 0; i < 9; i++){
+        if (boardValues[i] == EMPTY){
+            return EMPTY;
+        }
+	}
+	//if board is full, and noone won, then it's a tie
+	return TIE;
+}
+
 void AdvanceTurn(const HWND &hwnd, const HDC& hdc){
     turn = turn == CROSS ? NOUGHT : CROSS;
+    int cells[3];
+    int victor = GetVictor(cells);
+    if (victor != EMPTY) {
+        turn = GAME_OVER;
+    }
     DrawPlayerTurn(hwnd, hdc);
+    if (turn != GAME_OVER){
+        return;
+    }
+    //process GAME_OVER state:
+    //draw line if victor exists
+    if (victor != TIE){
+        RECT startRect = GetCellRect(hwnd, cells[0]);
+        RECT endRect = GetCellRect(hwnd, cells[2]);
+        int halfSize = cellSize / 2;
+        DrawLine(hdc, startRect.right - halfSize, startRect.bottom - halfSize, endRect.left + halfSize, endRect.top + halfSize);
+     }
+    //show message
+    auto message = victor == TIE ? "A tie!" : victor == CROSS ? "Player 1 won!" : "Player 2 won!";
+    MessageBox(hwnd, message, "gameover", MB_OK);
 }
 
 void ProccessClick(const HWND& hwnd, const LPARAM& lParam){
@@ -245,8 +296,6 @@ void ProccessClick(const HWND& hwnd, const LPARAM& lParam){
     //windowsx.h
     int x = GET_X_LPARAM(lParam);
     int y = GET_Y_LPARAM(lParam);
-    //int cell = GetCellIndex(hwnd, x, y);
-    //if (cell == OUTSIDE) return;
     int index = GetCellIndex(hwnd, x, y);
     if (index == OUTSIDE){
         return;
