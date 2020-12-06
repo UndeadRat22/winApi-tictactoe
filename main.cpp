@@ -17,7 +17,12 @@
 #include <windows.h>
 #include "windowsx.h"
 
+
+
 /// Globals
+//for dll
+typedef int (__cdecl *MYPROC)(int*, int*);
+
 // game board
 int boardValues[9] = { EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY };
 int turn = CROSS;
@@ -30,17 +35,31 @@ int cellSize = 100;
 
 // program
 HINSTANCE hInst;
+HINSTANCE hInstLib;
 /*  Declare Windows procedure  */
 LRESULT CALLBACK WindowProcedure (HWND, UINT, WPARAM, LPARAM);
 
 /*  Make the class name into a global variable  */
 TCHAR szClassName[ ] = _T("CodeBlocksWindowsApp");
+MYPROC externVictorFunction;
 
 int WINAPI WinMain (HINSTANCE hThisInstance,
                      HINSTANCE hPrevInstance,
                      LPSTR lpszArgument,
                      int nCmdShow)
 {
+    hInstLib = LoadLibrary("boardUtils\\bin\\Debug\\boardUtils.dll");
+    if (hInstLib == NULL){
+        std::cerr << "No boardUtils library found" << std::endl;
+        exit(-1);
+    }
+
+    externVictorFunction = (MYPROC) GetProcAddress(hInstLib, "GetVictor");
+    if (externVictorFunction == NULL){
+        std::cerr << "No GetVictor function found" << std::endl;
+        exit(-1);
+    }
+
     hInst = hThisInstance; // store instance;
     HWND hwnd;               /* This is the handle for our window */
     MSG messages;            /* Here messages to the application are saved */
@@ -236,33 +255,7 @@ void DrawIconCentered(const HDC& hdc, const RECT& rect, const HICON& hIcon)
 
 int GetVictor(int winningCells[3])
 {
-	int wins[] = {
-	    /*hor */0,1,2,  3,4,5,  6,7,8,
-	    /*ver */0,3,6,  1,4,7,  2,5,8,
-	    /*diag */0,4,8,  2,4,6 };
-
-    //someone won
-	for (auto i = 0; i < 24; i+=3)
-	{
-		if (boardValues[wins[i]] != EMPTY &&
-            boardValues[wins[i]] == boardValues[wins[i+1]] &&
-            boardValues[wins[i]] == boardValues[wins[i+2]])
-		{
-			winningCells[0] = wins[i];
-			winningCells[1] = wins[i + 1];
-			winningCells[2] = wins[i + 2];
-
-			return boardValues[wins[i]];
-		}
-	}
-	//return no victor if board is not full
-	for (auto i = 0; i < 9; i++){
-        if (boardValues[i] == EMPTY){
-            return EMPTY;
-        }
-	}
-	//if board is full, and noone won, then it's a tie
-	return TIE;
+    return externVictorFunction(boardValues, winningCells);
 }
 
 void AdvanceTurn(const HWND &hwnd, const HDC& hdc){
@@ -479,6 +472,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
             break;
         case WM_DESTROY:
             PostQuitMessage (0);       /* send a WM_QUIT to the message queue */
+            FreeLibrary(hInstLib);
             break;
         default:                      /* for messages that we don't deal with */
             return DefWindowProc (hwnd, message, wParam, lParam);

@@ -1,0 +1,7 @@
+# depslib dependency file v1.0
+1607283567 source:d:\_root\study\7sem\winapi\program\tictactoe\boardutils\main.cpp
+	"main.h"
+
+1607283261 d:\_root\study\7sem\winapi\program\tictactoe\boardutils\main.h
+	<windows.h>
+
