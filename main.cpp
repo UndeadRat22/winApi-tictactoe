@@ -19,10 +19,10 @@ int board[9] = { EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY }
 int winner = EMPTY;
 int turn = CROSS;
 // drawing globals
-HBRUSH p1brush, p2brush;
+HBRUSH p1brush, p2brush, bBrush;
 HICON p1icon, p2icon;
 int p1Score = 0, p2Score = 2;
-auto p1Color = RGB(0xFF, 0, 0), p2Color = RGB(0, 0x84, 0xFF);
+auto p1Color = RGB(0xFF, 0, 0), p2Color = RGB(0, 0x84, 0xFF), boardColor = RGB(0xFF, 0xFF, 0xFF);
 int cellSize = 100;
 
 // program
@@ -110,6 +110,7 @@ void Force_WM_PAINT(HWND hwnd){
 void LoadResources(HWND hwnd){
     p1brush = CreateSolidBrush(p1Color);
     p2brush = CreateSolidBrush(p2Color);
+    bBrush = CreateSolidBrush(boardColor);
     p1icon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_CROSS));
     p2icon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_NOUGHT));
     Force_WM_PAINT(hwnd);
@@ -139,23 +140,41 @@ void CreateBoard(HWND hwnd, RECT* board){
 
 void DrawPlayerInfo(HWND hwnd, HDC hdc){
     int width = GetClientWidth(hwnd);
-
+    //p1
     SetBkMode(hdc, TRANSPARENT);
     SetTextColor(hdc, p1Color);
     TextOut(hdc, 20, 20, "Player 1", 8);
     DrawIcon(hdc, 40, 40, p1icon);
-
+    //p2
     SetTextColor(hdc, p2Color);
     TextOut(hdc, width - (8 * 9), 20, "Player 2", 8);
     DrawIcon(hdc, width - (8 * 9), 40, p2icon);
 }
 
+void DrawLine(HDC hdc, const int& xOrigin, const int& yOrigin, const int& xEnd, const int& yEnd)
+{
+	MoveToEx(hdc, xOrigin, yOrigin, NULL);
+	LineTo(hdc, xEnd, yEnd);
+}
+
+void DrawBoard(HWND hwnd, HDC hdc){
+    RECT board;
+    CreateBoard(hwnd, &board);
+    FillRect(hdc, &board, bBrush);
+
+    //draw separating lines
+    for (int i = 0; i < 4; ++i)
+    {
+        DrawLine(hdc, board.left + cellSize * i, board.top, board.left + cellSize * i, board.bottom);
+        DrawLine(hdc, board.left, board.top + cellSize * i, board.right, board.top + cellSize * i);
+    }
+}
+
 void Draw(HWND hwnd){
     PAINTSTRUCT ps;
     HDC hdc = BeginPaint(hwnd, &ps);
-    //create game board
-    RECT board;
-    CreateBoard(hwnd, &board);
+
+    DrawBoard(hwnd, hdc);
     //Texts
     DrawPlayerInfo(hwnd, hdc);
     EndPaint(hwnd, &ps);
