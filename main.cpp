@@ -312,6 +312,14 @@ void ProccessClick(const HWND& hwnd, const LPARAM& lParam){
     AdvanceTurn(hwnd, hdc);
 }
 
+void NewGame(const HWND& hwnd){
+    int result = MessageBox(hwnd, "Start a new game?", "Reset", MB_YESNO | MB_ICONQUESTION);
+    if (result != IDYES) return;
+    RestartGame();
+    Force_WM_PAINT(hwnd);
+    Draw(hwnd);
+}
+
 
 LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -320,14 +328,23 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
         case WM_CREATE:
             LoadResources(hwnd);
             break;
+        case WM_COMMAND:
+            switch (LOWORD(wParam)){
+                case ID_FILE_NEWGAME:
+                    NewGame(hwnd);
+                break;
+                default:
+                break;
+            }
+            break;
         case WM_PAINT:
             Draw(hwnd);
             break;
-        case WM_DESTROY:
-            PostQuitMessage (0);       /* send a WM_QUIT to the message queue */
-            break;
         case WM_LBUTTONDOWN:
             ProccessClick(hwnd, lParam);
+            break;
+        case WM_DESTROY:
+            PostQuitMessage (0);       /* send a WM_QUIT to the message queue */
             break;
         default:                      /* for messages that we don't deal with */
             return DefWindowProc (hwnd, message, wParam, lParam);
