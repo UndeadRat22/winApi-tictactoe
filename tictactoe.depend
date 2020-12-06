@@ -1,9 +1,10 @@
 # depslib dependency file v1.0
-1607260608 source:d:\_root\study\7sem\winapi\program\tictactoe\main.cpp
+1607266510 source:d:\_root\study\7sem\winapi\program\tictactoe\main.cpp
 	"resource.h"
 	<iostream>
 	<tchar.h>
 	<windows.h>
+	"windowsx.h"
 
 1607258703 source:d:\_root\study\7sem\winapi\program\tictactoe\tictactoe.rc
 	"resource.h"

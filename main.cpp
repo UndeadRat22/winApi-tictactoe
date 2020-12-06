@@ -9,7 +9,7 @@
 #define NOUGHT 2
 #define EMPTY 0
 #define GAME_OVER 5
-#define OUTSIDE -2;
+#define OUTSIDE -2
 
 #include <iostream>
 #include <tchar.h>
@@ -18,7 +18,7 @@
 
 /// Globals
 // game board
-int board[9] = { EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY };
+int boardValues[9] = { EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY };
 int turn = CROSS;
 // drawing globals
 HBRUSH p1brush, p2brush, bBrush;
@@ -100,7 +100,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 
 void RestartGame(){
     turn = CROSS;
-    for (auto i = 0; i < 9; i++) board[i] = EMPTY;
+    for (auto i = 0; i < 9; i++) boardValues[i] = EMPTY;
 }
 
 void Force_WM_PAINT(const HWND& hwnd){
@@ -170,10 +170,14 @@ void DrawBoard(const HWND& hwnd, const HDC& hdc){
     }
 }
 
-void DrawPlayerTurn(HWND hwnd, HDC hdc){
+void DrawPlayerTurn(const HWND &hwnd, const HDC& hdc){
     SetBkMode(hdc, TRANSPARENT);
     RECT client;
     GetClientRect(hwnd, &client);
+    client.bottom = 18;
+    client.left = 40;
+    client.right = client.right - 40;
+    FillRect(hdc, &client, (HBRUSH)COLOR_BACKGROUND);
     auto color = turn == GAME_OVER ? RGB(0xFF,0xFF,0xFF) : turn == CROSS ? p1Color : p2Color;
     auto text =  turn == GAME_OVER ? "game over" : turn == CROSS ? "player 1" : "player 2";
     SetTextColor(hdc, color);
@@ -193,7 +197,7 @@ void Draw(const HWND& hwnd){
     EndPaint(hwnd, &ps);
 }
 
-int GetCellValue(const HWND& hwnd, const int& x, const int &y){
+int GetCellIndex(const HWND& hwnd, const int& x, const int &y){
     RECT board;
     CreateBoard(hwnd, &board);
     if (PtInRect(&board, {x, y})){
@@ -204,6 +208,36 @@ int GetCellValue(const HWND& hwnd, const int& x, const int &y){
     return OUTSIDE;
 }
 
+RECT GetCellRect(const HWND& hWnd, const int& index)
+{
+	RECT rcBoard;
+	CreateBoard(hWnd, &rcBoard);
+    int row = index / 3;
+    int col = index % 3;
+    RECT rect;
+    rect.left = rcBoard.left + col * cellSize +1;
+    rect.top = rcBoard.top + row * cellSize + 1;
+
+    rect.right = rect.left + cellSize - 1;
+    rect.bottom = rect.top + cellSize - 1;
+
+    return rect;
+}
+
+void DrawIconCentered(const HDC& hdc, const RECT& rect, const HICON& hIcon)
+{
+	const int ICON_WIDTH = GetSystemMetrics(SM_CXICON);
+	const int ICON_HEIGHT = GetSystemMetrics(SM_CYICON);
+    int left = rect.left + ((rect.right - rect.left) - ICON_WIDTH) / 2;
+    int top = rect.top + ((rect.bottom - rect.top) - ICON_HEIGHT) / 2;
+    DrawIcon(hdc, left, top, hIcon);
+}
+
+void AdvanceTurn(const HWND &hwnd, const HDC& hdc){
+    turn = turn == CROSS ? NOUGHT : CROSS;
+    DrawPlayerTurn(hwnd, hdc);
+}
+
 void ProccessClick(const HWND& hwnd, const LPARAM& lParam){
     if (turn == GAME_OVER){
         return;
@@ -211,8 +245,22 @@ void ProccessClick(const HWND& hwnd, const LPARAM& lParam){
     //windowsx.h
     int x = GET_X_LPARAM(lParam);
     int y = GET_Y_LPARAM(lParam);
-    int cell = GetCellValue(hwnd, x, y);
-    std::cout << cell << std::endl;
+    //int cell = GetCellIndex(hwnd, x, y);
+    //if (cell == OUTSIDE) return;
+    int index = GetCellIndex(hwnd, x, y);
+    if (index == OUTSIDE){
+        return;
+    }
+    int cellValue = boardValues[index];
+    if (cellValue != EMPTY){
+        return;
+    }
+    //> game not over, selected cell is empty;
+    boardValues[index] = turn;
+    HDC hdc = GetDC(hwnd);
+    RECT cellRect = GetCellRect(hwnd, index);
+    DrawIconCentered(hdc, cellRect, turn == CROSS ? p1icon : p2icon);
+    AdvanceTurn(hwnd, hdc);
 }
 
 
@@ -229,7 +277,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
         case WM_DESTROY:
             PostQuitMessage (0);       /* send a WM_QUIT to the message queue */
             break;
-        case WM_LBUTTONDBLCLK:
+        case WM_LBUTTONDOWN:
             ProccessClick(hwnd, lParam);
             break;
         default:                      /* for messages that we don't deal with */
